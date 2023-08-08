@@ -29,6 +29,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { Logo } from "./components/Logo";
 import { NFT_ABI } from "./components/NFTAbi";
+// @ts-ignore
 import { usePioneer } from "pioneer-react";
 import Web3 from "web3";
 
@@ -66,7 +67,7 @@ interface WalletOption {
 
 const Home = () => {
   const { state } = usePioneer();
-  const { api, wallet, app } = state;
+  const { api, app } = state;
   const [address, setAddress] = useState("");
   const [walletOptions, setWalletOptions] = useState([]);
   const [balance, setBalance] = useState("0.000");
@@ -307,16 +308,16 @@ const Home = () => {
       //@ts-ignore
       console.log("input: ", input);
       //get gas limit
-      console.log("wallet: ", wallet);
+      console.log("wallet: ", app.wallet);
       //@ts-ignore @TODO detect context
       const isMetaMask = await wallet?._isMetaMask;
       let responseSign;
       if (isMetaMask) {
-        responseSign = await wallet.ethSendTx(input);
+        responseSign = await app.wallet.ethSendTx(input);
         console.log("responseSign: ", responseSign);
         setTxid(responseSign.hash);
       } else {
-        responseSign = await wallet.ethSignTx(input);
+        responseSign = await app.wallet.ethSignTx(input);
         console.log("responseSign: ", responseSign);
       }
       console.log("responseSign: ", responseSign);
@@ -389,8 +390,8 @@ const Home = () => {
         scriptType: "ethereum",
         showDisplay: false,
       };
-      console.log(wallet);
-      const address = await wallet.ethGetAddress(addressInfo);
+      console.log(app.wallet);
+      const address = await app.wallet.ethGetAddress(addressInfo);
       console.log("address: ", address);
       setAddress(address);
 
@@ -403,6 +404,11 @@ const Home = () => {
       setService(info.data[0].service);
       setChainId(info.data[0].chainId);
       setBlockchain(info.data[0].name);
+      const resultSetBlockchainContext = await app.setBlockchainContext(
+        info.data[0]
+      );
+      console.log("resultSetBlockchainContext: ", resultSetBlockchainContext);
+
       // @ts-ignore
       const web3 = new Web3(
         // @ts-ignore
@@ -425,6 +431,25 @@ const Home = () => {
       console.log("Balance in Ether: ", balanceInEther);
       console.log("Block Number: ", blockNumber);
 
+      //listen for metamask account change
+      // @ts-ignore
+      window.ethereum.on("accountsChanged", async function (accounts: any) {
+        // Time to reload your interface with accounts[0]!
+        // console.log('accountsChanged: ', accounts);
+        // TODO register new pubkeys
+        const walletsPaired = app.wallets;
+        console.log("walletsPaired: ", walletsPaired);
+        console.log("context: ", app?.context);
+        //if context is metamask
+        if(app?.context === 'metamask.wallet.json'){
+          console.log("MetaMask is in context")
+          setAddress(accounts[0]);
+        }
+        //if address[0] !== pubkey
+
+        // re-register metamask with more pubkeys
+      });
+
       //TODO get tokens for chain
     } catch (e) {
       console.error(e);
@@ -434,6 +459,22 @@ const Home = () => {
   useEffect(() => {
     onStart();
   }, [api, app, app?.walletDescriptions]);
+
+  // useEffect(() => {
+  //   setContext(app?.context);
+  // }, [app?.context]); // once on startup
+  //
+  // useEffect(() => {
+  //   setAssetContext(app?.assetContext?.name);
+  // }, [app?.assetContext?.name]); // once on startup
+  //
+  // useEffect(() => {
+  //   setBlockchainContext(app?.blockchainContext?.name);
+  // }, [app?.blockchainContext?.name]); // once on startup
+
+  useEffect(() => {
+    setAddress(app?.pubkeyContext?.master || app?.pubkeyContext?.pubkey);
+  }, [app?.pubkeyContext]); // once on startup
 
   const handleClose = async function () {
     try {
@@ -568,6 +609,11 @@ const Home = () => {
       setService(info.data[0].service);
       setChainId(info.data[0].chainId);
       setBlockchain(info.data[0].name);
+      const resultSetBlockchainContext = await app.setBlockchainContext(
+        info.data[0]
+      );
+      console.log("resultSetBlockchainContext: ", resultSetBlockchainContext);
+      console.log("app: ", app.blockchainContext);
       // @ts-ignore
       const web3 = new Web3(
         new Web3.providers.HttpProvider(info.data[0].service)
