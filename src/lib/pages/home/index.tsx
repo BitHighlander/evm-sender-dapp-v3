@@ -67,7 +67,7 @@ interface WalletOption {
 
 const Home = () => {
   const { state } = usePioneer();
-  const { api, app } = state;
+  const { api, app, context, assetContext, blockchainContext, pubkeyContext } = state;
   const [address, setAddress] = useState("");
   const [walletOptions, setWalletOptions] = useState([]);
   const [balance, setBalance] = useState("0.000");
@@ -460,22 +460,6 @@ const Home = () => {
     onStart();
   }, [api, app, app?.walletDescriptions]);
 
-  // useEffect(() => {
-  //   setContext(app?.context);
-  // }, [app?.context]); // once on startup
-  //
-  // useEffect(() => {
-  //   setAssetContext(app?.assetContext?.name);
-  // }, [app?.assetContext?.name]); // once on startup
-  //
-  // useEffect(() => {
-  //   setBlockchainContext(app?.blockchainContext?.name);
-  // }, [app?.blockchainContext?.name]); // once on startup
-
-  useEffect(() => {
-    setAddress(app?.pubkeyContext?.master || app?.pubkeyContext?.pubkey);
-  }, [app?.pubkeyContext]); // once on startup
-
   const handleClose = async function () {
     try {
       // @ts-ignore
@@ -667,7 +651,11 @@ const Home = () => {
     setSelectedWallet(selectedContext);
   };
 
-  // @ts-ignore
+  useEffect(() => {
+    console.log("pubkeyContext: ", pubkeyContext);
+    setAddress(pubkeyContext.master || pubkeyContext.pubkey);
+  }, [pubkeyContext, pubkeyContext?.pubkey]);
+
   return (
     <div>
       <Modal isOpen={isOpen} onClose={() => handleClose()} size="xl">
